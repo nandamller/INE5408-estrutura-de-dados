@@ -106,7 +106,6 @@ class DoublyCircularList {
 
 template<typename T>
 structures::DoublyCircularList<T>::DoublyCircularList() {
-    head = nullptr;
     size_ = 0;
 }
 
@@ -129,14 +128,12 @@ void structures::DoublyCircularList<T>::push_back(const T& data) {
         return push_front(data);
     }
 
-    Node *q = head->prev();
-
     Node *novo = new Node(data);
-    novo->next(head);
-    novo->prev(q);
 
+    head->prev()->next(novo);
+    novo->prev(head->prev());
     head->prev(novo);
-    q->next(novo);
+    novo->next(head);
 
     size_++;
 }
@@ -181,6 +178,8 @@ void structures::DoublyCircularList<T>::insert(const T& data,
         }
 
         Node *novo = new Node(data);
+        if (novo == nullptr)
+            throw std::out_of_range("Memória cheia");
 
         novo->next(p->next());
         novo->prev(p);
@@ -208,6 +207,8 @@ void structures::DoublyCircularList<T>::insert_sorted(const T& data) {
         }
 
         Node *novo = new Node(data);
+        if (novo == nullptr)
+            throw std::out_of_range("Memória cheia");
 
         novo->prev(q);
         novo->next(p);
@@ -257,13 +258,13 @@ T structures::DoublyCircularList<T>::pop_back() {
     } else if (size_ == 1) {
         return pop_front();
     } else {
-        Node *p = head->prev();
+        Node *aux = head->prev();
 
-        T saida = p->data();
-        p->prev()->next(head);
-        head->prev(p->prev());
+        T saida = aux->data();
+        aux->prev()->next(head);
+        head->prev(aux->prev());
 
-        delete p;
+        delete aux;
 
         size_--;
 
@@ -275,27 +276,21 @@ template<typename T>
 T structures::DoublyCircularList<T>::pop_front() {
     if (empty()) {
         throw std::out_of_range("Lista vazia!");
-    } else if (size_ == 1) {
-        T saida = head->data();
-
-        head = nullptr;
-        size_--;
-        return saida;
-    } else {
-        Node *p = head;
-
-        p->prev()->next(p->next());
-        p->next()->prev(p->prev());
-
-        head = p->next();
-
-        T saida = p->data();
-
-        delete p;
-
-        size_--;
-        return saida;
     }
+
+    Node *aux = head;
+    T saida = aux->data();
+
+    if (size_ == 1) {
+        head = nullptr;
+    } else {
+        head = aux->next();
+        aux->prev()->next(aux->next());
+        aux->next()->prev(aux->prev());
+    }
+    delete aux;
+    size_--;
+    return saida;
 }
 
 template<typename T>
@@ -308,7 +303,7 @@ void structures::DoublyCircularList<T>::remove(const T& data) {
     for (int i = 0; (std::size_t)i < size_; i++) {
         if (p->data() == data) {
             pop(i);
-            return;
+            break;
         }
         p = p->next();
     }
@@ -321,18 +316,7 @@ bool structures::DoublyCircularList<T>::empty() const {
 
 template<typename T>
 bool structures::DoublyCircularList<T>::contains(const T& data) const {
-    if (empty())
-        throw std::out_of_range("lista vazia");
-
-    Node *p = head;
-
-    for (int i = 0; (std::size_t)i < size_; i++) {
-        if (p->data() == data) {
-            return true;
-        }
-        p = p->next();
-    }
-    return false;
+    return (find(data) != size_);
 }
 
 template<typename T>
